@@ -4,8 +4,7 @@ import pytest
 from structures.idz_2_1 import recursive_search
 
 @pytest.mark.asyncio
-async def  test_recursive_search(tmp_path):
-
+async def test_recursive_search_finds_files(tmp_path):
     dir1 = tmp_path / "logs_folder"
     dir1.mkdir()
 
@@ -21,26 +20,32 @@ async def  test_recursive_search(tmp_path):
     txt_file = dir2 / "dir2_txt_debug.txt"
     txt_file.write_text("this is not a log file")
 
+    stop_event = asyncio.Event()
+    results = []
 
+    await recursive_search(str(tmp_path), ".log", stop_event, results)
+
+    assert len(results) == 2
+    assert str(log_file1) in results
+    assert str(log_file2) in results
+    assert str(txt_file) not in results
+
+@pytest.mark.asyncio
+async def test_recursive_search_interrupts_immediately(tmp_path):
+  
     for i in range(1, 16):
         log_file = tmp_path / f"test_log_{i}.log"
         log_file.write_text("log files")
 
     stop_event = asyncio.Event()
-    stop_event.set()
+    stop_event.set() 
     
     results = []
 
     await recursive_search(str(tmp_path), ".log", stop_event, results)
 
-    expected_count = 2
-    assert len(results) == expected_count
-
-    assert str(log_file1) in results
-    assert str(log_file2) in results
-
-    assert str(txt_file) not in results
-
+    assert len(results) == 0
+    assert results == []
 
 
 
